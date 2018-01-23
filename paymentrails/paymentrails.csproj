@@ -51,6 +51,7 @@
     <Compile Include="Exceptions\InvalidFieldException.cs" />
     <Compile Include="Exceptions\InvalidServerRequest.cs" />
     <Compile Include="Exceptions\InvalidStatusCodeException.cs" />
+    <Compile Include="Extensions\DateTimeEx.cs" />
     <Compile Include="JsonHelpers\BalanceHelper.cs" />
     <Compile Include="JsonHelpers\BatchHelper.cs" />
     <Compile Include="JsonHelpers\JsonHelper.cs" />
