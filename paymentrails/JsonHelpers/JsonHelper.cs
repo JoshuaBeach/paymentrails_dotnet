@@ -10,58 +10,34 @@ namespace PaymentRails.JsonHelpers
     public abstract class JsonHelper
     {
         #region Helper to type Mapping functions
-        protected static Payout PayoutJsonHelperToPayout(PayoutJsonHelper helper)
-        {
-            if(helper == null)
-            {
-                return null;
-            }
-            float autoswitchLimit = 0, holdupLimit = 0;
-            bool autoswitchActive = false, holdupActive = false;
-            string currency = null;
-            BankAccount bank = null;
-            PaypalAccount paypal = null;
-            if(helper.AutoSwitch == null && helper.Holdup == null)
-            {
-                return null;
-            }
-            if(helper.AutoSwitch != null)
-            {
-                autoswitchLimit = helper.AutoSwitch.Limit;
-                autoswitchActive = helper.AutoSwitch.Active;
-            }
-            if (helper.Holdup != null)
-            {
-                holdupLimit = helper.Holdup.Limit;
-                holdupActive = helper.Holdup.Active;
-            }
-            if (helper.Primary != null)
-            {
-                currency = helper.Primary.Currency.Currency.Code;
-            }
-            if (helper.Accounts != null)
-            {
-                if (helper.Accounts.Bank != null)
-                {
-                    Address bankAddress = new Address(helper.Accounts.Bank.BankAddress, null, helper.Accounts.Bank.BankCity,
-                        helper.Accounts.Bank.BankPostalCode, null, helper.Accounts.Bank.Country, helper.Accounts.Bank.BankRegion);
-                    bank = new BankAccount(helper.Accounts.Bank.Country, helper.Accounts.Bank.Institution, helper.Accounts.Bank.BranchNum,
-                        helper.Accounts.Bank.AccountNum, helper.Accounts.Bank.Currency, helper.Accounts.Bank.Name, helper.Accounts.Bank.Routing,
-                        helper.Accounts.Bank.Iban, helper.Accounts.Bank.SwiftBic, helper.Accounts.Bank.GovernmentID, bankAddress);
-                }                
-                paypal = helper.Accounts.Paypal;
-            }
-            return new Types.Payout(autoswitchLimit, autoswitchActive, holdupLimit, holdupActive, helper.Method, currency, bank, paypal);
-        }
-
         protected static Recipient RecipientJsonHelperToRecipient(RecipientJsonHelper helper)
         {
-            Payout payout = PayoutJsonHelperToPayout(helper.Payout);
+            List<RecipientAccount> accounts = null;
+            
+            if (helper.Accounts != null)
+            {
+                accounts = new List<RecipientAccount>();
+                foreach (RecipientAccount p in helper.Accounts)
+                {
+                    accounts.Add(p);
+                    //accounts.Add(RecipientAccountJsonHelperToRecipientAccount(p));
+                    //accounts.Last().BatchId = helper.Id;
+                }
+            }
+
             Recipient recipient = new Recipient(helper.Id, helper.Type, helper.ReferenceId, helper.Email, helper.Name,
                 helper.FirstName, helper.LastName, helper.Status, helper.TimeZone, helper.Language,
-                helper.Dob, helper.GravatarUrl, helper.Compliance, payout, helper.Address);
-
+                helper.Dob, helper.GravatarUrl, helper.Compliance, accounts, helper.Address);
             return recipient;
+        }
+
+        protected static RecipientAccount RecipientAccountJsonHelperToRecipientAccount(RecipientAccountJsonHelper helper)
+        {     
+            RecipientAccount recipientAccount = new RecipientAccount(helper.Id, helper.Primary, helper.Currency, helper.RecipientAccountId, helper.RouteType,
+                helper.RecipientFees, helper.EmailAddress, helper.Country, helper.Type, helper.Iban,
+                helper.AccountNum, helper.AccountHolderName, helper.SwiftBic, helper.BranchId, helper.BankName, helper.BankId, helper.BankAddress, helper.BankCity, helper.BankRegionCode, helper.BankPostalCode);
+
+            return recipientAccount;
         }
 
         protected static Payment PaymentJsonHelperToPayment(PaymentJsonHelper helper)
@@ -140,6 +116,29 @@ namespace PaymentRails.JsonHelpers
             }
         }
 
+        protected class RecipientRecipientAccountPaginationJsonHelper
+        {
+            private List<RecipientAccountJsonHelper> recipientAccounts;
+            
+            public List<RecipientAccountJsonHelper> RecipientAccounts
+            {
+                get
+                {
+                    return RecipientAccounts;
+                }
+                set
+                {
+                    RecipientAccounts = value;
+                }
+            }
+            public RecipientRecipientAccountPaginationJsonHelper()
+            {
+
+            }
+
+        }
+
+
         protected class RecipientJsonHelper
         {
             private string id;
@@ -156,7 +155,11 @@ namespace PaymentRails.JsonHelpers
             private string gravatarUrl;
 
             private Compliance compliance;
-            private PayoutJsonHelper payout;
+            private List<RecipientAccount> accounts;
+            //private RecipientRecipientAccountPaginationJsonHelper accounts;
+            //private RecipientAccountListJsonHelper account;
+            //private RecipientAccountJsonHelper account;
+            //private PayoutJsonHelper payout;
             private Address address;
 
             #region properties
@@ -316,6 +319,18 @@ namespace PaymentRails.JsonHelpers
                 }
             }
 
+            public List<RecipientAccount> Accounts
+            {
+                get
+                {
+                    return accounts;
+                }
+                set
+                {
+                    accounts = value;
+                }
+            }
+
             public Compliance Compliance
             {
                 get
@@ -328,20 +343,8 @@ namespace PaymentRails.JsonHelpers
                     compliance = value;
                 }
             }
-
-            public PayoutJsonHelper Payout
-            {
-                get
-                {
-                    return payout;
-                }
-
-                set
-                {
-                    payout = value;
-                }
-            }
-
+          
+ 
             public Address Address
             {
                 get
@@ -356,7 +359,7 @@ namespace PaymentRails.JsonHelpers
             }
             #endregion
 
-            public RecipientJsonHelper(string id, string referenceId, string email, string name, string firstName, string lastName, string type, string status, string timeZone, string language, string dob, string gravatarUrl, Compliance compliance, PayoutJsonHelper payout, Address address)
+            public RecipientJsonHelper(string id, string referenceId, string email, string name, string firstName, string lastName, string type, string status, string timeZone, string language, string dob, string gravatarUrl, Compliance compliance, List<RecipientAccount> accounts, Address address)
             {
                 this.id = id;
                 this.referenceId = referenceId;
@@ -371,7 +374,7 @@ namespace PaymentRails.JsonHelpers
                 this.dob = dob;
                 this.gravatarUrl = gravatarUrl;
                 this.compliance = compliance;
-                this.payout = payout;
+                this.accounts = accounts;
                 this.address = address;
             }
 
@@ -421,6 +424,410 @@ namespace PaymentRails.JsonHelpers
             }
 
             public RecipientListJsonHelper()
+            {
+
+            }
+        }
+        #endregion
+        #region RecipientAccount classes
+        protected class RecipientAccountResponseHelper
+        {
+            private bool ok;
+            private RecipientAccountJsonHelper recipientAccount;
+
+            public bool Ok
+            {
+                get
+                {
+                    return ok;
+                }
+
+                set
+                {
+                    ok = value;
+                }
+            }
+
+            public RecipientAccountJsonHelper Account
+            {
+                get
+                {
+                    return recipientAccount;
+                }
+
+                set
+                {
+                    recipientAccount = value;
+                }
+            }
+
+            public RecipientAccountResponseHelper(bool ok, RecipientAccountJsonHelper recipientAccount)
+            {
+                this.ok = ok;
+                this.recipientAccount = recipientAccount;
+            }
+
+            public RecipientAccountResponseHelper()
+            {
+
+            }
+        }
+
+        protected class RecipientAccountJsonHelper
+        {
+            private string id;
+            private string primary;
+            private string currency;
+            private string recipientAccountId;
+            private string routeType;
+            private string recipientFees;
+            private string emailAddress;
+            private string country;
+            private string type;
+            private string iban;
+            private string accountNum;
+            private string accountHolderName;
+            private string swiftBic;
+            private string branchId;
+            private string bankName;
+            private string bankId;
+            private string bankAddress;
+            private string bankCity;
+            private string bankRegionCode;
+            private string bankPostalCode;
+
+            #region properties
+            public string Id
+            {
+                get
+                {
+                    return id;
+                }
+
+                set
+                {
+                    id = value;
+                }
+            }
+
+            public string Primary
+            {
+                get
+                {
+                    return primary;
+                }
+
+                set
+                {
+                    primary = value;
+                }
+            }
+
+            public string Currency
+            {
+                get
+                {
+                    return currency;
+                }
+
+                set
+                {
+                    currency = value;
+                }
+            }
+
+            public string RecipientAccountId
+            {
+                get
+                {
+                    return recipientAccountId;
+                }
+
+                set
+                {
+                    recipientAccountId = value;
+                }
+            }
+
+            public string RouteType
+            {
+                get
+                {
+                    return routeType;
+                }
+
+                set
+                {
+                    routeType = value;
+                }
+            }
+
+            public string RecipientFees
+            {
+                get
+                {
+                    return recipientFees;
+                }
+
+                set
+                {
+                    recipientFees = value;
+                }
+            }
+
+            public string EmailAddress
+            {
+                get
+                {
+                    return emailAddress;
+                }
+
+                set
+                {
+                    emailAddress = value;
+                }
+            }
+
+            public string Country
+            {
+                get
+                {
+                    return country;
+                }
+
+                set
+                {
+                    country = value;
+                }
+            }
+
+            public string Type
+            {
+                get
+                {
+                    return type;
+                }
+
+                set
+                {
+                    type = value;
+                }
+            }
+
+            public string Iban
+            {
+                get
+                {
+                    return iban;
+                }
+
+                set
+                {
+                    iban = value;
+                }
+            }
+
+            public string AccountNum
+            {
+                get
+                {
+                    return accountNum;
+                }
+
+                set
+                {
+                    accountNum = value;
+                }
+            }
+
+            public string AccountHolderName
+            {
+                get
+                {
+                    return accountHolderName;
+                }
+
+                set
+                {
+                    accountHolderName = value;
+                }
+            }
+
+            public string SwiftBic
+            {
+                get
+                {
+                    return swiftBic;
+                }
+
+                set
+                {
+                    swiftBic = value;
+                }
+            }
+
+            public string BranchId
+            {
+                get
+                {
+                    return branchId;
+                }
+
+                set
+                {
+                    branchId = value;
+                }
+            }
+
+            public string BankName
+            {
+                get
+                {
+                    return bankName;
+                }
+
+                set
+                {
+                    bankName = value;
+                }
+            }
+
+            public string BankId
+            {
+                get
+                {
+                    return bankId;
+                }
+
+                set
+                {
+                    bankId = value;
+                }
+            }
+
+            public string BankAddress
+            {
+                get
+                {
+                    return bankAddress;
+                }
+
+                set
+                {
+                    bankAddress = value;
+                }
+            }
+
+            public string BankCity
+            {
+                get
+                {
+                    return bankCity;
+                }
+
+                set
+                {
+                    bankCity = value;
+                }
+            }
+
+            public string BankRegionCode
+            {
+                get
+                {
+                    return bankRegionCode;
+                }
+
+                set
+                {
+                    bankRegionCode = value;
+                }
+            }
+
+            public string BankPostalCode
+            {
+                get
+                {
+                    return bankPostalCode;
+                }
+
+                set
+                {
+                    bankPostalCode = value;
+                }
+            }
+            #endregion
+
+            public RecipientAccountJsonHelper(string id, string primary, string currency, string recipientAccountId, string routeType, string recipientFees, string emailAddress, string country, string type, string iban, string accountNum, string accountHolderName, String swiftBic, string branchId, string bankName, string bankId, string bankAddress, string bankCity, string bankRegionCode, string bankPostalCode)
+            {
+                this.Id = id;
+                this.Primary = primary;
+                this.Currency = currency;
+                this.RecipientAccountId = recipientAccountId;
+                this.RouteType = routeType;
+                this.RecipientFees = recipientFees;
+                this.EmailAddress = emailAddress;
+                this.Country = country;
+                this.Type = type;
+                this.Iban = iban;
+                this.AccountNum = accountNum;
+                this.AccountHolderName = accountHolderName;
+                this.SwiftBic = swiftBic;
+                this.BranchId = branchId;
+                this.BankName = bankName;
+                this.BankId = bankId;
+                this.BankAddress = bankAddress;
+                this.BankCity = bankCity;
+                this.BankRegionCode = bankRegionCode;
+                this.BankPostalCode = bankPostalCode;
+            }
+
+            public RecipientAccountJsonHelper()
+            {
+
+            }
+
+
+        }
+
+        protected class RecipientAccountListJsonHelper
+        {
+            private bool ok;
+            private List<RecipientAccountJsonHelper> recipientAccounts;
+            #region properties
+            public bool Ok
+            {
+                get
+                {
+                    return ok;
+                }
+
+                set
+                {
+                    ok = value;
+                }
+            }
+
+            public List<RecipientAccountJsonHelper> Accounts
+            {
+                get
+                {
+                    return recipientAccounts;
+                }
+
+                set
+                {
+                    recipientAccounts = value;
+                }
+            }
+            #endregion
+            public RecipientAccountListJsonHelper(bool ok, List<RecipientAccountJsonHelper> recipientAccounts)
+            {
+                this.ok = ok;
+                this.recipientAccounts = recipientAccounts;
+            }
+
+            public RecipientAccountListJsonHelper()
             {
 
             }
